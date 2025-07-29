@@ -103,16 +103,31 @@
           cfg = config.services.ctrld;
 
           toml = pkgs.formats.toml { };
-          configFile = toml.generate "config.toml" cfg.settings;
+          configFile =
+            if lib.isPath cfg.settings then cfg.settings else toml.generate "ctrld.toml" cfg.settings;
         in
         {
           options.services.ctrld = {
-            enable = lib.mkEnableOption "ctrld DNS proxy";
+            enable = lib.mkEnableOption "Enable ctrld DNS proxy";
 
             settings = lib.mkOption {
-              type = toml.type;
-              default = { };
-              description = "Configuration settings for ctrld";
+              type = with lib.types; either path toml.type;
+              default = {
+                listener = {
+                  "0" = {
+                    ip = "0.0.0.0";
+                    port = 53;
+                  };
+                };
+                upstream = {
+                  "0" = {
+                    type = "doh";
+                    endpoint = "https://freedns.controld.com/p2";
+                    timeout = 5000;
+                  };
+                };
+              };
+              description = "Configuration settings for ctrld. Accepts path to a TOML file.";
             };
 
             package = lib.mkOption {
@@ -127,38 +142,49 @@
               description = "Control-D DNS Proxy";
               after = [
                 "network.target"
-                "nss-lookup.target"
               ];
+              before = [ "nss-lookup.target" ];
               wantedBy = [ "multi-user.target" ];
+              restartTriggers = [ cfg.package ];
 
               serviceConfig = {
-                ExecStart = "${pkgs.lib.getExe cfg.package} run --config=${configFile}";
+                Type = "exec";
                 Restart = "always";
-                RestartSec = 10;
-                DynamicUser = true;
+                RestartSec = 5;
 
-                AmbientCapabilities = "CAP_NET_BIND_SERVICE";
-                LockPersonality = true;
-                MemoryDenyWriteExecute = true;
-                NoNewPrivileges = true;
-                ProtectClock = true;
+                ProtectSystem = "strict";
                 ProtectHome = true;
-                ProtectHostname = true;
-                ProtectKernelLogs = true;
-                RemoveIPC = true;
+                ReadWritePaths = [ "/var/run" ];
+
                 RestrictAddressFamilies = [
+                  "AF_UNIX"
                   "AF_INET"
                   "AF_INET6"
+                  "AF_NETLINK"
                 ];
-                RestrictNamespaces = true;
-                RestrictRealtime = true;
-                RestrictSUIDSGID = true;
+                AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
                 SystemCallArchitectures = "native";
-                SystemCallErrorNumber = "EPERM";
                 SystemCallFilter = [
                   "@system-service"
                   "~@privileged @resources"
                 ];
+
+                MemoryDenyWriteExecute = true;
+                ProtectControlGroups = true;
+                ProtectKernelLogs = true;
+                ProtectKernelModules = true;
+                ProtectKernelTunables = true;
+                ProtectClock = true;
+
+                RestrictNamespaces = true;
+                RestrictRealtime = true;
+                PrivateDevices = true;
+                LockPersonality = true;
+
+                NoNewPrivileges = true;
+                RestrictSUIDSGID = true;
+
+                ExecStart = "${pkgs.lib.getExe cfg.package} run --config=${configFile}";
               };
             };
           };
@@ -175,16 +201,31 @@
           cfg = config.services.ctrld;
 
           toml = pkgs.formats.toml { };
-          configFile = toml.generate "config.toml" cfg.settings;
+          configFile =
+            if lib.isPath cfg.settings then cfg.settings else toml.generate "ctrld.toml" cfg.settings;
         in
         {
           options.services.ctrld = {
-            enable = lib.mkEnableOption "ctrld DNS proxy";
+            enable = lib.mkEnableOption "Enable ctrld DNS proxy";
 
             settings = lib.mkOption {
-              type = toml.type;
-              default = { };
-              description = "Configuration settings for ctrld";
+              type = with lib.types; either path toml.type;
+              default = {
+                listener = {
+                  "0" = {
+                    ip = "0.0.0.0";
+                    port = 53;
+                  };
+                };
+                upstream = {
+                  "0" = {
+                    type = "doh";
+                    endpoint = "https://freedns.controld.com/p2";
+                    timeout = 5000;
+                  };
+                };
+              };
+              description = "Configuration settings for ctrld. Accepts path to a TOML file.";
             };
 
             package = lib.mkOption {
