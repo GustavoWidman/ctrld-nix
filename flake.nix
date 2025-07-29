@@ -17,67 +17,28 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
       version = "1.4.5";
-
-      # Platform-specific download URLs and hashes
-      platforms = {
-        x86_64-linux = {
-          url = "https://github.com/Control-D-Inc/ctrld/releases/download/v${version}/ctrld_${version}_linux_amd64.tar.gz";
-          name = "ctrld_${version}_linux_amd64";
-          sha256 = "sha256-93OD+Ei268OmQ5GIu5pT4eQCNbWWGdMC8vfWvuqmxqk=";
-        };
-
-        aarch64-linux = {
-          url = "https://github.com/Control-D-Inc/ctrld/releases/download/v${version}/ctrld_${version}_linux_arm64.tar.gz";
-          name = "ctrld_${version}_linux_arm64";
-          sha256 = "sha256-2pm2mls5E2HEfUxSx1sJHg5mUs7qMpgsE0phXBPKfVo=";
-        };
-        x86_64-darwin = {
-          url = "https://github.com/Control-D-Inc/ctrld/releases/download/v${version}/ctrld_${version}_darwin_amd64.tar.gz";
-          name = "ctrld_${version}_darwin_amd64";
-          sha256 = "sha256-sw1B0QfBoKni1NxccUNw5yoc5jVDPvP356zICpeveXc=";
-        };
-        aarch64-darwin = {
-          url = "https://github.com/Control-D-Inc/ctrld/releases/download/v${version}/ctrld_${version}_darwin_arm64.tar.gz";
-          name = "ctrld_${version}_darwin_arm64";
-          sha256 = "sha256-ti1PO2ZqZfmy4s1d7ogXg+uwxuzZOxOmmkf4xYNXGMk=";
-        };
-      };
     in
     {
       packages = forAllSystems (
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          platform = platforms.${system};
         in
         {
-          ctrld = pkgs.stdenv.mkDerivation rec {
-            pname = "ctrld";
+          ctrld = pkgs.buildGoModule rec {
+            name = "ctrld";
             inherit version;
 
-            src = pkgs.fetchurl {
-              url = platform.url;
-              sha256 = platform.sha256;
+            src = pkgs.fetchFromGitHub {
+              owner = "Control-D-Inc";
+              repo = "ctrld";
+              rev = "v${version}";
+              hash = "sha256-ZiNyB8d4x6SBG5MIGqzHzQgFbMCRunPPpGKzffwmXBM=";
             };
 
-            nativeBuildInputs = [
-              pkgs.gnutar
-              pkgs.gzip
-            ];
-
-            unpackPhase = ''
-              runHook preUnpack
-              tar -xzf $src
-              runHook postUnpack
-            '';
-
-            installPhase = ''
-              runHook preInstall
-              mkdir -p $out/bin
-              cp dist/${platform.name}/ctrld $out/bin/
-              chmod +x $out/bin/ctrld
-              runHook postInstall
-            '';
+            vendorHash = "sha256-AVR+meUcjpExjUo7J1U6zUPY2B+9NOqBh7K/I8qrqL4=";
+            proxyVendor = true;
+            subPackages = [ "cmd/ctrld" ];
 
             meta = with pkgs.lib; {
               description = "A highly configurable, multi-protocol DNS forwarding proxy";
@@ -85,6 +46,7 @@
               license = licenses.mit;
               maintainers = [ ];
               platforms = [ system ];
+              mainProgram = "ctrld";
             };
           };
 
