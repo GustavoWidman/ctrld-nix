@@ -66,7 +66,10 @@
 
           toml = pkgs.formats.toml { };
           configFile =
-            if lib.isPath cfg.settings then cfg.settings else toml.generate "ctrld.toml" cfg.settings;
+            if lib.isPath cfg.settings || lib.isString cfg.settings then
+              cfg.settings
+            else
+              toml.generate "ctrld.toml" cfg.settings;
         in
         {
           options.services.ctrld = {
@@ -164,7 +167,10 @@
 
           toml = pkgs.formats.toml { };
           configFile =
-            if lib.isPath cfg.settings then cfg.settings else toml.generate "ctrld.toml" cfg.settings;
+            if lib.isPath cfg.settings || lib.isString cfg.settings then
+              cfg.settings
+            else
+              toml.generate "ctrld.toml" cfg.settings;
         in
         {
           options.services.ctrld = {
